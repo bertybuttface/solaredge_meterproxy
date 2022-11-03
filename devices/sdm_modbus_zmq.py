@@ -1,26 +1,8 @@
 import logging
 import json
 import sys
-import zmq
 
-
-class ZmqDevice:
-
-    def __init__(self, host, port, topic):
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.SUB)
-        self.topic = topic
-        print("Collecting updates from meter...")
-        self.socket.connect(f"tcp://{host}:{port}")
-
-    def read_all(self):
-        topicfilter = str(self.topic)
-        self.socket.setsockopt_string(zmq.SUBSCRIBE, topicfilter)
-        recv_string = self.socket.recv()
-        topic, message_data = recv_string.split()
-        parsed_message_data = json.loads(message_data)
-        return parsed_message_data
-
+from sdm_modbus_zmq.client import Client
 
 def device(config):
 
@@ -35,7 +17,7 @@ def device(config):
     port = config.getint("port", fallback=False)
     topic = config.get("topic", fallback=1)
 
-    return ZmqDevice(
+    return Client(
         host=host,
         port=port,
         topic=topic,
@@ -48,7 +30,7 @@ def values(device):
     logger = logging.getLogger()
     logger.debug(f"device: {device}")
 
-    values = device.read_all()
+    values = device.get_data()
 
     logger.debug(f"values: {values}")
 
